@@ -1,6 +1,9 @@
 #include <sdktools>
 #include <neotokyo>
 
+#pragma semicolon 1
+#pragma newdecls required
+
 bool repick[32+1];
 bool loadout[32+1];
 int playerClass[32+1];
