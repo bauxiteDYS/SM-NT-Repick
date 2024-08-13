@@ -99,7 +99,10 @@ public Action OnVariant(int client, const char[] command, int argc)
 
 void ShowLoadoutMenu(int client)
 {
-	ClientCommand(client, "loadoutmenu");
+	if (IsClientInGame(client))
+	{
+		ClientCommand(client, "loadoutmenu");
+	}
 }
 
 public Action OnLoadout(int client, const char[] command, int argc)
@@ -177,5 +180,8 @@ public Action RepickWeapon(int client, int args)
 
 void ShowClassMenu(int client)
 {
-	ClientCommand(client, "classmenu");
+	if (IsClientInGame(client))
+	{
+		ClientCommand(client, "classmenu");
+	}
 }
