@@ -14,7 +14,7 @@ public Plugin myinfo = {
 	author = "bauxite",
 	description = "Repick your class and weapon by typing !re in freeze time",
 	version = "0.1.3",
-	url = "",
+	url = "https://github.com/bauxiteDYS/SM-NT-Repick",
 };
 
 public void OnPluginStart()	
