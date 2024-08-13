@@ -14,7 +14,7 @@ public Plugin myinfo = {
 	name = "NT Repick Class and weapon",
 	author = "bauxite",
 	description = "Repick your class and weapon by typing !re in freeze time",
-	version = "0.1.3",
+	version = "0.1.4",
 	url = "https://github.com/bauxiteDYS/SM-NT-Repick",
 };
 
