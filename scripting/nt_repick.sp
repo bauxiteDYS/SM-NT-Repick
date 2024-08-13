@@ -108,7 +108,7 @@ public Action OnLoadout(int client, const char[] command, int argc)
 		return Plugin_Continue;
 	}
 	
-	if(!GameRules_GetProp("m_bFreezePeriod") || !IsPlayerAlive(client) || argc != 1)
+	if(argc != 1 || !GameRules_GetProp("m_bFreezePeriod") || !IsPlayerAlive(client))
 	{
 		SetPlayerClass(client, oldPlayerClass[client]);
 		ResetClient(client);
