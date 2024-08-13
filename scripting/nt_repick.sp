@@ -10,7 +10,7 @@ public Plugin myinfo = {
 	name = "NT Repick Class and weapon",
 	author = "bauxite",
 	description = "Repick your class and weapon by typing !re in freeze time",
-	version = "0.1.1",
+	version = "0.1.3",
 	url = "",
 };
 
@@ -24,15 +24,25 @@ public void OnPluginStart()
 	AddCommandListener(OnCancel, "playerstate_reverse");
 }
 
-public void OnClientDisconnect_Post(int client)
+void ResetClient(int client)
 {
 	repick[client] = false;
 	loadout[client] = false;
 }
 
+public void OnClientDisconnect_Post(int client)
+{
+	ResetClient(client);
+}
+
+public void OnClientPutInServer(int client)
+{
+	ResetClient(client);
+}
+
 public Action OnCancel(int client, const char[] command, int argc)
 {	
-	if(!repick[client])
+	if(!repick[client] || !IsClientInGame(client))
 	{
 		return Plugin_Continue;
 	}
@@ -42,35 +52,38 @@ public Action OnCancel(int client, const char[] command, int argc)
 		SetPlayerClass(client, oldPlayerClass[client]);
 	}
 	
-	repick[client] = false;
-	loadout[client] = false;
+	ResetClient(client);
 	return Plugin_Continue;
 }
 
 public Action OnClass(int client, const char[] command, int argc)
 {
-	if(!repick[client])
+	if(!repick[client] || !IsClientInGame(client) || argc != 1)
 	{
 		return Plugin_Continue;
 	}
 
-	char sClass[2];
-	GetCmdArg(1, sClass, sizeof(sClass));
-	int iClass = StringToInt(sClass);
+	int iClass = GetCmdArgInt(1);
+	if(iClass <= 0 || iClass > 3)
+	{
+		PrintToChat(client, "Error: Somehow tried to pick invalid class");
+		ResetClient(client);
+		return Plugin_Continue;
+	}
 	playerClass[client] = iClass;
 	return Plugin_Continue;
 }
 
 public Action OnVariant(int client, const char[] command, int argc)
 {
-	if(!repick[client])
+	if(!repick[client] || !IsClientInGame(client))
 	{
 		return Plugin_Continue;
 	}
 	
-	if(!GameRules_GetProp("m_bFreezePeriod"))
+	if(!GameRules_GetProp("m_bFreezePeriod") || !IsPlayerAlive(client))
 	{
-		repick[client] = false;
+		ResetClient(client);
 		return Plugin_Continue;
 	}
 	
@@ -87,16 +100,15 @@ void ShowLoadoutMenu(int client)
 
 public Action OnLoadout(int client, const char[] command, int argc)
 {
-	if(!repick[client])
+	if(!repick[client] || !IsClientInGame(client))
 	{
 		return Plugin_Continue;
 	}
 	
-	if(!GameRules_GetProp("m_bFreezePeriod") || !IsPlayerAlive(client))
+	if(!GameRules_GetProp("m_bFreezePeriod") || !IsPlayerAlive(client) || argc != 1)
 	{
 		SetPlayerClass(client, oldPlayerClass[client]);
-		repick[client] = false;
-		loadout[client] = false;
+		ResetClient(client);
 		return Plugin_Continue;
 	}
 	
@@ -108,14 +120,13 @@ public Action OnLoadout(int client, const char[] command, int argc)
 
 void Repick(int client)
 {
-	if(!IsPlayerAlive(client))
+	ResetClient(client);
+	
+	if(!IsClientInGame(client) || !IsPlayerAlive(client))
 	{
-		loadout[client] = false;
-		repick[client] = false;
 		return;
 	}
-	
-	loadout[client] = false;
+
 	static Handle call = INVALID_HANDLE;
 	if (call == INVALID_HANDLE)
 	{
@@ -128,7 +139,6 @@ void Repick(int client)
 		}
 	}
 	SDKCall(call, client);
-	repick[client] = false;	
 }
 
 public Action RepickWeapon(int client, int args)
@@ -138,17 +148,12 @@ public Action RepickWeapon(int client, int args)
 		return Plugin_Handled;
 	}
 	
-	if(!IsClientInGame(client) || !IsPlayerAlive(client))
-	{
-		return Plugin_Handled;
-	}
-	
-	if(repick[client])
-	{
-		return Plugin_Handled;
-	}
-	
 	if(!GameRules_GetProp("m_bFreezePeriod"))
+	{
+		return Plugin_Handled;
+	}
+	
+	if(!IsClientInGame(client) || !IsPlayerAlive(client) || repick[client])
 	{
 		return Plugin_Handled;
 	}
