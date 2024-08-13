@@ -67,7 +67,7 @@ public Action OnClass(int client, const char[] command, int argc)
 	}
 
 	int iClass = GetCmdArgInt(1);
-	if(iClass <= 0 || iClass > 3)
+	if(iClass <= CLASS_NONE || iClass > CLASS_SUPPORT)
 	{
 		PrintToChat(client, "Error: Somehow tried to pick invalid class");
 		ResetClient(client);
@@ -163,7 +163,7 @@ public Action RepickWeapon(int client, int args)
 	
 	oldPlayerClass[client] = GetPlayerClass(client);
 	
-	if(oldPlayerClass[client] <= 0 || oldPlayerClass[client] > 3)
+	if(oldPlayerClass[client] <= CLASS_NONE || oldPlayerClass[client] > CLASS_SUPPORT)
 	{
 		PrintToChat(client, "failed to get class, try again");
 		return Plugin_Handled;
