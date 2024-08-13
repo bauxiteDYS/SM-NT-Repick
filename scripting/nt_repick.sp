@@ -4,10 +4,10 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-bool repick[32+1];
-bool loadout[32+1];
-int playerClass[32+1];
-int oldPlayerClass[32+1];
+bool repick[NEO_MAXPLAYERS+1];
+bool loadout[NEO_MAXPLAYERS+1];
+int playerClass[NEO_MAXPLAYERS+1];
+int oldPlayerClass[NEO_MAXPLAYERS+1];
 
 public Plugin myinfo = {
 	name = "NT Repick Class and weapon",
@@ -146,7 +146,7 @@ void Repick(int client)
 
 public Action RepickWeapon(int client, int args)
 {
-	if(client <= 0 || client >= 33)
+	if(client <= 0 || client > MaxClients)
 	{
 		return Plugin_Handled;
 	}
