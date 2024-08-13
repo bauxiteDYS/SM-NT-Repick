@@ -10,7 +10,7 @@ public Plugin myinfo = {
 	name = "NT Repick Class and weapon",
 	author = "bauxite",
 	description = "Repick your class and weapon by typing !re in freeze time",
-	version = "0.1.0",
+	version = "0.1.1",
 	url = "",
 };
 
@@ -92,7 +92,7 @@ public Action OnLoadout(int client, const char[] command, int argc)
 		return Plugin_Continue;
 	}
 	
-	if(!GameRules_GetProp("m_bFreezePeriod"))
+	if(!GameRules_GetProp("m_bFreezePeriod") || !IsPlayerAlive(client))
 	{
 		SetPlayerClass(client, oldPlayerClass[client]);
 		repick[client] = false;
@@ -108,6 +108,13 @@ public Action OnLoadout(int client, const char[] command, int argc)
 
 void Repick(int client)
 {
+	if(!IsPlayerAlive(client))
+	{
+		loadout[client] = false;
+		repick[client] = false;
+		return;
+	}
+	
 	loadout[client] = false;
 	static Handle call = INVALID_HANDLE;
 	if (call == INVALID_HANDLE)
