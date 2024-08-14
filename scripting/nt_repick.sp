@@ -12,7 +12,7 @@ int oldPlayerClass[NEO_MAXPLAYERS+1];
 
 public Plugin myinfo = {
 	name = "NT Repick Class and weapon",
-	author = "bauxite",
+	author = "bauxite, rain",
 	description = "Repick your class and weapon by typing !re in freeze time",
 	version = "0.1.4",
 	url = "https://github.com/bauxiteDYS/SM-NT-Repick",
