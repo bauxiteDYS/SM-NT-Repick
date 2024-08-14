@@ -1,17 +1,21 @@
+#include <sourcemod>
 #include <sdktools>
 #include <neotokyo>
 
-bool repick[32+1];
-bool loadout[32+1];
-int playerClass[32+1];
-int oldPlayerClass[32+1];
+#pragma semicolon 1
+#pragma newdecls required
+
+bool repick[NEO_MAXPLAYERS+1];
+bool loadout[NEO_MAXPLAYERS+1];
+int playerClass[NEO_MAXPLAYERS+1];
+int oldPlayerClass[NEO_MAXPLAYERS+1];
 
 public Plugin myinfo = {
 	name = "NT Repick Class and weapon",
 	author = "bauxite",
 	description = "Repick your class and weapon by typing !re in freeze time",
-	version = "0.1.3",
-	url = "",
+	version = "0.1.4",
+	url = "https://github.com/bauxiteDYS/SM-NT-Repick",
 };
 
 public void OnPluginStart()	
@@ -64,7 +68,7 @@ public Action OnClass(int client, const char[] command, int argc)
 	}
 
 	int iClass = GetCmdArgInt(1);
-	if(iClass <= 0 || iClass > 3)
+	if(iClass <= CLASS_NONE || iClass > CLASS_SUPPORT)
 	{
 		PrintToChat(client, "Error: Somehow tried to pick invalid class");
 		ResetClient(client);
@@ -95,7 +99,10 @@ public Action OnVariant(int client, const char[] command, int argc)
 
 void ShowLoadoutMenu(int client)
 {
-	ClientCommand(client, "loadoutmenu");
+	if (IsClientInGame(client))
+	{
+		ClientCommand(client, "loadoutmenu");
+	}
 }
 
 public Action OnLoadout(int client, const char[] command, int argc)
@@ -105,7 +112,7 @@ public Action OnLoadout(int client, const char[] command, int argc)
 		return Plugin_Continue;
 	}
 	
-	if(!GameRules_GetProp("m_bFreezePeriod") || !IsPlayerAlive(client) || argc != 1)
+	if(argc != 1 || !GameRules_GetProp("m_bFreezePeriod") || !IsPlayerAlive(client))
 	{
 		SetPlayerClass(client, oldPlayerClass[client]);
 		ResetClient(client);
@@ -143,7 +150,7 @@ void Repick(int client)
 
 public Action RepickWeapon(int client, int args)
 {
-	if(client <= 0 || client >= 33)
+	if(client <= 0 || client > MaxClients)
 	{
 		return Plugin_Handled;
 	}
@@ -160,7 +167,7 @@ public Action RepickWeapon(int client, int args)
 	
 	oldPlayerClass[client] = GetPlayerClass(client);
 	
-	if(oldPlayerClass[client] <= 0 || oldPlayerClass[client] > 3)
+	if(oldPlayerClass[client] <= CLASS_NONE || oldPlayerClass[client] > CLASS_SUPPORT)
 	{
 		PrintToChat(client, "failed to get class, try again");
 		return Plugin_Handled;
@@ -173,5 +180,29 @@ public Action RepickWeapon(int client, int args)
 
 void ShowClassMenu(int client)
 {
-	ClientCommand(client, "classmenu");
+	if (IsClientInGame(client))
+	{
+		ClientCommand(client, "classmenu");
+	}
 }
+
+// Backported from SourceMod/SourcePawn SDK for SM 1.8-1.10 compatibility.
+// Used here under GPLv3 license: https://www.sourcemod.net/license.php
+// SourceMod (C)2004-2023 AlliedModders LLC.  All rights reserved.
+#if SOURCEMOD_V_MAJOR == 1 && SOURCEMOD_V_MINOR <= 10
+/**
+ * Retrieves a numeric command argument given its index, from the current
+ * console or server command. Will return 0 if the argument can not be
+ * parsed as a number. Use GetCmdArgIntEx to handle that explicitly.
+ *
+ * @param argnum        Argument number to retrieve.
+ * @return              Value of the command argument.
+ */
+stock int GetCmdArgInt(int argnum)
+{
+    char str[12];
+    GetCmdArg(argnum, str, sizeof(str));
+
+    return StringToInt(str);
+}
+#endif
