@@ -13,8 +13,8 @@ int oldPlayerClass[NEO_MAXPLAYERS+1];
 public Plugin myinfo = {
 	name = "NT Repick Class and weapon",
 	author = "bauxite, rain",
-	description = "Repick your class and weapon by typing !re in freeze time",
-	version = "0.1.4",
+	description = "Repick your class and weapon by typing !re or !repick in freeze time",
+	version = "0.1.5",
 	url = "https://github.com/bauxiteDYS/SM-NT-Repick",
 };
 
@@ -62,7 +62,7 @@ public Action OnCancel(int client, const char[] command, int argc)
 
 public Action OnClass(int client, const char[] command, int argc)
 {
-	if(!repick[client] || !IsClientInGame(client) || argc != 1)
+	if(argc != 1 || !repick[client] || !IsClientInGame(client))
 	{
 		return Plugin_Continue;
 	}
