@@ -5,16 +5,25 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-bool repick[NEO_MAXPLAYERS+1];
-bool loadout[NEO_MAXPLAYERS+1];
-int playerClass[NEO_MAXPLAYERS+1];
-int oldPlayerClass[NEO_MAXPLAYERS+1];
+bool g_repick[NEO_MAXPLAYERS+1];
+bool g_loadout[NEO_MAXPLAYERS+1];
+int g_playerClass[NEO_MAXPLAYERS+1];
+int g_oldPlayerClass[NEO_MAXPLAYERS+1];
+int g_playerLoadout[NEO_MAXPLAYERS+1];
+int g_PrimaryAmmo[3+1][12] = 
+{
+	{0,0,0,0,0,0,0,0,0,0,0,0},
+	{120,150,120,150,120,30,90,21,60,0,0,0},
+	{150,200,150,120,120,28,60,60,120,120,64,18},
+	{150,200,150,60,28,120,60,120,200,0,0,0}, 
+};
+//int g_secondaryAmmo[3+1] = {0, 45, 45, 45};
 
 public Plugin myinfo = {
 	name = "NT Repick Class and weapon",
 	author = "bauxite, rain",
 	description = "Repick your class and weapon by typing !re or !repick in freeze time",
-	version = "0.1.5",
+	version = "0.1.6",
 	url = "https://github.com/bauxiteDYS/SM-NT-Repick",
 };
 
@@ -30,8 +39,9 @@ public void OnPluginStart()
 
 void ResetClient(int client)
 {
-	repick[client] = false;
-	loadout[client] = false;
+	g_repick[client] = false;
+	g_loadout[client] = false;
+	g_playerLoadout[client] = -1;
 }
 
 public void OnClientDisconnect_Post(int client)
@@ -46,14 +56,14 @@ public void OnClientPutInServer(int client)
 
 public Action OnCancel(int client, const char[] command, int argc)
 {	
-	if(!repick[client] || !IsClientInGame(client))
+	if(!g_repick[client] || !IsClientInGame(client))
 	{
 		return Plugin_Continue;
 	}
 	
-	if(loadout[client])
+	if(g_loadout[client])
 	{
-		SetPlayerClass(client, oldPlayerClass[client]);
+		SetPlayerClass(client, g_oldPlayerClass[client]);
 	}
 	
 	ResetClient(client);
@@ -62,7 +72,7 @@ public Action OnCancel(int client, const char[] command, int argc)
 
 public Action OnClass(int client, const char[] command, int argc)
 {
-	if(argc != 1 || !repick[client] || !IsClientInGame(client))
+	if(argc != 1 || !g_repick[client] || !IsClientInGame(client))
 	{
 		return Plugin_Continue;
 	}
@@ -74,13 +84,13 @@ public Action OnClass(int client, const char[] command, int argc)
 		ResetClient(client);
 		return Plugin_Continue;
 	}
-	playerClass[client] = iClass;
+	g_playerClass[client] = iClass;
 	return Plugin_Continue;
 }
 
 public Action OnVariant(int client, const char[] command, int argc)
 {
-	if(!repick[client] || !IsClientInGame(client))
+	if(!g_repick[client] || !IsClientInGame(client))
 	{
 		return Plugin_Continue;
 	}
@@ -91,8 +101,8 @@ public Action OnVariant(int client, const char[] command, int argc)
 		return Plugin_Continue;
 	}
 	
-	loadout[client] = true;
-	SetPlayerClass(client, playerClass[client]);
+	g_loadout[client] = true;
+	SetPlayerClass(client, g_playerClass[client]);
 	RequestFrame(ShowLoadoutMenu, client);
 	return Plugin_Continue;
 }
@@ -107,33 +117,49 @@ void ShowLoadoutMenu(int client)
 
 public Action OnLoadout(int client, const char[] command, int argc)
 {
-	if(!repick[client] || !IsClientInGame(client))
+	if(!g_repick[client] || !IsClientInGame(client))
 	{
 		return Plugin_Continue;
 	}
 	
+	
 	if(argc != 1 || !GameRules_GetProp("m_bFreezePeriod") || !IsPlayerAlive(client))
 	{
-		SetPlayerClass(client, oldPlayerClass[client]);
+		SetPlayerClass(client, g_oldPlayerClass[client]);
 		ResetClient(client);
 		return Plugin_Continue;
 	}
 	
+	
+	int iLoadout = GetCmdArgInt(1);
+	
+	if(iLoadout < 0 || iLoadout > 11)
+	{
+		PrintToChat(client, "Error: Somehow tried to pick invalid loadout");
+		SetPlayerClass(client, g_oldPlayerClass[client]);
+		ResetClient(client);
+		return Plugin_Continue;
+	}
+	
+	g_playerLoadout[client] = iLoadout;
+	PrintToServer("load %d", iLoadout);
 	StripPlayerWeapons(client, false);
-	SetPlayerClass(client, oldPlayerClass[client]);
+	SetPlayerClass(client, g_oldPlayerClass[client]);
 	RequestFrame(Repick, client);
 	return Plugin_Continue;
 }
 
 void Repick(int client)
 {
-	ResetClient(client);
 	
 	if(!IsClientInGame(client) || !IsPlayerAlive(client))
 	{
 		return;
 	}
+	
 
+	SetNewClassProps(client);
+	
 	static Handle call = INVALID_HANDLE;
 	if (call == INVALID_HANDLE)
 	{
@@ -146,6 +172,37 @@ void Repick(int client)
 		}
 	}
 	SDKCall(call, client);
+	
+	AdjustAmmo(client);
+	
+	PrintToChatAll("%N has repicked their class", client);
+}
+
+void AdjustAmmo(int client)
+{
+	int correctAmmo;
+	int wep;
+	
+	correctAmmo = g_PrimaryAmmo[g_playerClass[client]][g_playerLoadout[client]];
+	wep = GetEntPropEnt(client, Prop_Send, "m_hMyWeapons", 0);
+	
+	SetWeaponAmmo(client, GetAmmoType(wep), correctAmmo);
+	SetWeaponAmmo(client, AMMO_SECONDARY, 45);
+	//might need to set nades
+	ResetClient(client);
+}
+
+void SetNewClassProps(int client)
+{
+	SetEntProp(client, Prop_Send, "m_iLives", 1);
+	SetEntProp(client, Prop_Data, "m_iObserverMode", 0);
+	SetEntProp(client, Prop_Data, "m_iHealth", 100);
+	SetEntProp(client, Prop_Data, "m_lifeState", 0);
+	SetEntProp(client, Prop_Data, "m_fInitHUD", 1);
+	SetEntProp(client, Prop_Data, "m_takedamage", 2);
+	SetEntProp(client, Prop_Send, "deadflag", 0);
+	SetEntPropFloat(client, Prop_Send, "m_flDeathTime", 0.0);
+	SetEntPropEnt(client, Prop_Data, "m_hObserverTarget", -1, 0);
 }
 
 public Action RepickWeapon(int client, int args)
@@ -160,20 +217,20 @@ public Action RepickWeapon(int client, int args)
 		return Plugin_Handled;
 	}
 	
-	if(!IsClientInGame(client) || !IsPlayerAlive(client) || repick[client])
+	if(!IsClientInGame(client) || !IsPlayerAlive(client) || g_repick[client])
 	{
 		return Plugin_Handled;
 	}
 	
-	oldPlayerClass[client] = GetPlayerClass(client);
+	g_oldPlayerClass[client] = GetPlayerClass(client);
 	
-	if(oldPlayerClass[client] <= CLASS_NONE || oldPlayerClass[client] > CLASS_SUPPORT)
+	if(g_oldPlayerClass[client] <= CLASS_NONE || g_oldPlayerClass[client] > CLASS_SUPPORT)
 	{
 		PrintToChat(client, "failed to get class, try again");
 		return Plugin_Handled;
 	}
 	
-	repick[client] = true;
+	g_repick[client] = true;
 	RequestFrame(ShowClassMenu, client);
 	return Plugin_Continue;
 }
