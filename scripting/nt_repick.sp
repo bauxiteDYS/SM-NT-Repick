@@ -182,7 +182,7 @@ void AdjustAmmo(int client)
 {
 	int correctAmmo;
 	int wep;
-	
+	// check if they really have weps
 	correctAmmo = g_PrimaryAmmo[g_playerClass[client]][g_playerLoadout[client]];
 	wep = GetEntPropEnt(client, Prop_Send, "m_hMyWeapons", 0);
 	
